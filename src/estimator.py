@@ -18,10 +18,10 @@ def computeImpact(reportedCases, estimatorMethod, periodType, timeToElapse, tota
     hospitalBedsByRequestedTime=computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds)
   )
 def computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds):
-  return (35*totalHospitalBeds)/100 - severeCasesByRequestedTime
+  return float(int((35*totalHospitalBeds)/100 - severeCasesByRequestedTime))
 
 def computeSevereCasesByRequestedTime(infectionsByRequestedTime):
-  return (infectionsByRequestedTime*15)/100
+  return float(int((infectionsByRequestedTime*15)/100))
 
 def normalizeDuration(periodType, timeToElapse):
   """Returns number of days given periodType and timeToElapse"""
