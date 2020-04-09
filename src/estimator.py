@@ -1,18 +1,28 @@
 def estimator(data):
   reportedCases = data['reportedCases']
-  periodType, timeToElapse = data['periodType'], data['timeToElapse']
+  periodType, timeToElapse, totalHospitalBeds = data['periodType'], data['timeToElapse'], data['totalHospitalBeds']
   return dict(
     data=data, 
-    impact=computeImpact(reportedCases, impactEstimator, periodType, timeToElapse), 
-    severeImpact=computeImpact(reportedCases, severeImpactEstimator, periodType, timeToElapse)
+    impact=computeImpact(reportedCases, impactEstimator, periodType, timeToElapse, totalHospitalBeds), 
+    severeImpact=computeImpact(reportedCases, severeImpactEstimator, periodType, timeToElapse, totalHospitalBeds)
   )
 
-def computeImpact(reportedCases, estimatorMethod, periodType, timeToElapse):
+def computeImpact(reportedCases, estimatorMethod, periodType, timeToElapse, totalHospitalBeds):
   currentlyInfected = estimatorMethod(reportedCases)
+  infectionsByRequestedTime = computeInfectionsByRequestedTime(currentlyInfected, periodType, timeToElapse)
+  severeCasesByRequestedTime=computeSevereCasesByRequestedTime(infectionsByRequestedTime)
   return dict(
     currentlyInfected=currentlyInfected,
-    infectionsByRequestedTime=computeInfectionsByRequestedTime(currentlyInfected, periodType, timeToElapse)
+    infectionsByRequestedTime=infectionsByRequestedTime,
+    severeCasesByRequestedTime=severeCasesByRequestedTime,
+    hospitalBedsByRequestedTime=computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds)
   )
+def computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds):
+  return int((35*totalHospitalBeds)/100) - severeCasesByRequestedTime
+
+def computeSevereCasesByRequestedTime(infectionsByRequestedTime):
+  return int((infectionsByRequestedTime*15)/100)
+
 def normalizeDuration(periodType, timeToElapse):
   """Returns number of days given periodType and timeToElapse"""
   if periodType == "weeks":
