@@ -1,27 +1,35 @@
 def estimator(data):
-  reportedCases = data['reportedCases']
-  periodType, timeToElapse, totalHospitalBeds = data['periodType'], data['timeToElapse'], data['totalHospitalBeds']
   return dict(
     data=data, 
-    impact=computeImpact(reportedCases, impactEstimator, periodType, timeToElapse, totalHospitalBeds), 
-    severeImpact=computeImpact(reportedCases, severeImpactEstimator, periodType, timeToElapse, totalHospitalBeds)
+    impact=computeImpact(impactEstimator, data), 
+    severeImpact=computeImpact(severeImpactEstimator, data)
   )
 
-def computeImpact(reportedCases, estimatorMethod, periodType, timeToElapse, totalHospitalBeds):
+def computeImpact(estimatorMethod, data):
+  reportedCases, periodType, timeToElapse, totalHospitalBeds = data['reportedCases'], data['periodType'], data['timeToElapse'], data['totalHospitalBeds']
+  region = data['region']
+  avgDailyIncome, avgDailyIncomePopulation = region['avgDailyIncomeInUSD'], region['avgDailyIncomePopulation']
+  numberOfDays = normalizeDuration(periodType,timeToElapse)
   currentlyInfected = estimatorMethod(reportedCases)
-  infectionsByRequestedTime = computeInfectionsByRequestedTime(currentlyInfected, periodType, timeToElapse)
-  severeCasesByRequestedTime=computeSevereCasesByRequestedTime(infectionsByRequestedTime)
+  infectionsByRequestedTime = computeInfectionsByRequestedTime(currentlyInfected, numberOfDays)
+  severeCasesByRequestedTime= computeInfectionTypeRate(infectionsByRequestedTime, 15)
   return dict(
     currentlyInfected=currentlyInfected,
     infectionsByRequestedTime=infectionsByRequestedTime,
     severeCasesByRequestedTime=severeCasesByRequestedTime,
-    hospitalBedsByRequestedTime=computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds)
+    hospitalBedsByRequestedTime=computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds),
+    casesForICUByRequestedTime=computeInfectionTypeRate(infectionsByRequestedTime, 5),
+    casesForVentilatorsByRequestedTime=computeInfectionTypeRate(infectionsByRequestedTime, 2),
+    dollarsInFlight=computeDollarsInFlight(avgDailyIncome, avgDailyIncomePopulation, numberOfDays, infectionsByRequestedTime)
   )
+def computeDollarsInFlight(avgDailyIncome, avgDailyIncomePopulation ,numberOfDays, infectionsByRequestedTime):
+  return round(infectionsByRequestedTime * avgDailyIncomePopulation * avgDailyIncome * numberOfDays, 2)
+
 def computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds):
   return float(int((35*totalHospitalBeds)/100 - severeCasesByRequestedTime))
 
-def computeSevereCasesByRequestedTime(infectionsByRequestedTime):
-  return float(int((infectionsByRequestedTime*15)/100))
+def computeInfectionTypeRate(infections, rate):
+  return float(int((infections*rate)/100))
 
 def normalizeDuration(periodType, timeToElapse):
   """Returns number of days given periodType and timeToElapse"""
@@ -31,8 +39,8 @@ def normalizeDuration(periodType, timeToElapse):
     return timeToElapse*30
   return timeToElapse
 
-def computeInfectionsByRequestedTime(currentlyInfected, periodType, timeToElapse):
-  return currentlyInfected*(2**(normalizeDuration(periodType,timeToElapse)//3))
+def computeInfectionsByRequestedTime(currentlyInfected, numberOfDays):
+  return currentlyInfected*(2**(numberOfDays//3))
 
 
 def impactEstimator(reportedCases):
