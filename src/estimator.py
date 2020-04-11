@@ -23,13 +23,14 @@ def computeImpact(estimatorMethod, data):
     dollarsInFlight=computeDollarsInFlight(avgDailyIncome, avgDailyIncomePopulation, numberOfDays, infectionsByRequestedTime)
   )
 def computeDollarsInFlight(avgDailyIncome, avgDailyIncomePopulation ,numberOfDays, infectionsByRequestedTime):
-  return round(infectionsByRequestedTime * avgDailyIncomePopulation * avgDailyIncome * numberOfDays, 2)
+  # we avoid division per None or 0
+  return int((infectionsByRequestedTime * avgDailyIncomePopulation * avgDailyIncome) / numberOfDays) if numberOfDays else 0
 
 def computeHospitalBedsByRequestedTime(severeCasesByRequestedTime, totalHospitalBeds):
-  return float(int((35*totalHospitalBeds)/100 - severeCasesByRequestedTime))
+  return int((35*totalHospitalBeds)/100 - severeCasesByRequestedTime)
 
 def computeInfectionTypeRate(infections, rate):
-  return float(int((infections*rate)/100))
+  return int((infections*rate)/100)
 
 def normalizeDuration(periodType, timeToElapse):
   """Returns number of days given periodType and timeToElapse"""
